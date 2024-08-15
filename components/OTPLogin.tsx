@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useTransition } from "react";
 import { auth } from "@/lib/firebase";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,6 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { Loader2 } from "lucide-react";
 
 const OTPLogin = () => {
   const router = useRouter();
@@ -40,6 +40,7 @@ const OTPLogin = () => {
 
   const [isPending, startTransition] = useTransition();
 
+  // Start timer
   useEffect(() => {
     let timer: any;
 
@@ -50,6 +51,7 @@ const OTPLogin = () => {
     return () => clearTimeout(timer);
   }, [resendCountdown]);
 
+  // Setup captcha for security
   useEffect(() => {
     const recaptchaVerifier = new RecaptchaVerifier(
       auth,
@@ -110,8 +112,40 @@ const OTPLogin = () => {
     });
   };
 
+  //Verify OTP
+  const verifyOTP = async () => {
+    startTransition(async () => {
+      setError(null);
+
+      if (!confirmationResult) {
+        setError("Please request OTP first.");
+
+        return;
+      }
+
+      try {
+        await confirmationResult?.confirm(otp);
+
+        router.replace("/");
+      } catch (err) {
+        setError("Faile to verify OTP, Please check OTP.");
+
+        console.log("VERIFY_OTP", err);
+      }
+    });
+  };
+
+  //Use effect to verify OTP
+  useEffect(() => {
+    const otpValid = otp.length === 6;
+
+    if (otpValid) {
+      verifyOTP();
+    }
+  }, [otp]);
+
   return (
-    <>
+    <div className="w-full flex flex-col items-center">
       <div className="flex flex-col items-center">
         {!confirmationResult && (
           <form onSubmit={requestOTP}>
@@ -132,6 +166,32 @@ const OTPLogin = () => {
               </Label>
             </div>
           </form>
+        )}
+
+        {confirmationResult && (
+          <InputOTP
+            maxLength={6}
+            value={otp}
+            onChange={(value) => setOtp(value)}
+          >
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+
+              <InputOTPSlot index={1} />
+
+              <InputOTPSlot index={2} />
+            </InputOTPGroup>
+
+            <InputOTPSeparator />
+
+            <InputOTPGroup>
+              <InputOTPSlot index={3} />
+
+              <InputOTPSlot index={4} />
+
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
         )}
 
         <Button
@@ -156,7 +216,7 @@ const OTPLogin = () => {
       </div>
 
       <div id="recaptcha-container" />
-    </>
+    </div>
   );
 };
 
