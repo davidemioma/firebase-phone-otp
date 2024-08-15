@@ -19,7 +19,7 @@ export default function Home() {
 
       {user ? (
         <h2 className="text-xl font-medium text-center">
-          Welcome to the app, your ID is {""}
+          Welcome to the app, your ID is {user.uid}
         </h2>
       ) : (
         <h2 className="text-xl font-medium text-center">
